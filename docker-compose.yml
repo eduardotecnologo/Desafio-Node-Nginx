@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  db:
+    build: ./mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dbnode
+    restart: always
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+  nodejs-app:
+    build: ./node
+    container_name: app
+    hostname: nodejsserver
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 20s npm start
+    tty: true
+    environment:
+      MYSQL_DATABASE: dbnode
+      MYSQL_USER: edudeveloper
+      MYSQL_PASSWORD: root
+      MYSQL_HOST: db
+    depends_on:
+      - db
+    restart: on-failure
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    hostname: nginx
+    ports:
+      - "8080:80"
+    depends_on:
+        - nodejs-app
